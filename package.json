@@ -1,0 +1,32 @@
+{
+  "name": "blogs-app",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "api",
+    "app",
+    "e2e"
+  ],
+  "main": "index.js",
+  "scripts": {
+    "build": "npm run build --workspace=app",
+    "start:api": "npm run start --workspace=api",
+    "dev:api": "npm run build && npm run dev --workspace=api"
+  },
+  "devDependencies": {
+    "@babel/eslint-parser": "^7.26.5",
+    "@babel/plugin-syntax-jsx": "^7.25.9",
+    "@eslint/js": "^9.17.0",
+    "eslint": "^8.57.1",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "prettier-eslint": "^16.3.0",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
