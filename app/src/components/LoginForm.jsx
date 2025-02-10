@@ -1,9 +1,17 @@
 import { useState } from 'react'
-import PropTypes from 'prop-types'
+import { useDispatch } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
+import { setUserWithDelay } from '../reducers/userReducer'
 import loginService from '../services/login'
 import blogService from '../services/blogs'
+import { setNotificationWithDelay } from '../reducers/notificationReducer'
+import Button from '../styled/Button'
+import Input from '../styled/Input'
 
-const LoginForm = ({ setErrorMessage, setUser }) => {
+const LoginForm = () => {
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+
   const [credentials, setCredentials] = useState({ username: '', password: '' })
 
   const handleChange = ({ name, value }) => {
@@ -21,14 +29,12 @@ const LoginForm = ({ setErrorMessage, setUser }) => {
         'loggedBlogappUser',
         JSON.stringify(loggedUser)
       )
-      setUser(loggedUser)
+      dispatch(setUserWithDelay(loggedUser))
       blogService.setToken(loggedUser.token)
       setCredentials({ username: '', password: '' })
+      navigate('/')
     } catch (exception) {
-      setErrorMessage('Wrong username or password')
-      setTimeout(() => {
-        setErrorMessage(null)
-      }, 5000)
+      dispatch(setNotificationWithDelay('Wrong username or password'))
     }
   }
 
@@ -38,7 +44,8 @@ const LoginForm = ({ setErrorMessage, setUser }) => {
 
       <form onSubmit={handleLogin}>
         <div>
-          <input
+          <label htmlFor="username">username: </label>
+          <Input
             name="username"
             type="text"
             value={credentials.username}
@@ -47,7 +54,8 @@ const LoginForm = ({ setErrorMessage, setUser }) => {
           />
         </div>
         <div>
-          <input
+          <label htmlFor="password">password: </label>
+          <Input
             name="password"
             type="password"
             value={credentials.password}
@@ -55,15 +63,10 @@ const LoginForm = ({ setErrorMessage, setUser }) => {
             placeholder="Password"
           />
         </div>
-        <button type="submit">login</button>
+        <Button type="submit">login</Button>
       </form>
     </div>
   )
-}
-
-LoginForm.propTypes = {
-  setErrorMessage: PropTypes.func.isRequired,
-  setUser: PropTypes.func.isRequired,
 }
 
 export default LoginForm

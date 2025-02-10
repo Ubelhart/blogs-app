@@ -44,6 +44,24 @@ blogsRouter.post('/', async (request, response) => {
   response.status(201).json(savedBlog)
 })
 
+blogsRouter.post('/:id/comments', async (request, response) => {
+  const { comment } = request.body
+
+  const blog = await Blog.findById(request.params.id)
+  if (!blog) {
+    return response.status(404).end()
+  }
+
+  const commentBlog = {
+    comment,
+  }
+
+  blog.comments = blog.comments.concat(commentBlog)
+  await blog.save()
+
+  response.status(201).json(blog.comments[blog.comments.length - 1])
+})
+
 blogsRouter.delete('/:id', async (request, response) => {
   const decodedToken = request.user
 

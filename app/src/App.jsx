@@ -1,95 +1,148 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { setNotificationWithDelay } from './reducers/notificationReducer'
+import { initializeBlogs, createBlog } from './reducers/blogReducer'
+import { setUserWithDelay, clearUser } from './reducers/userReducer'
+import { initializeUsers } from './reducers/usersReducer'
+import { Routes, Route, useMatch, useNavigate } from 'react-router-dom'
+import blogService from './services/blogs'
 import Notification from './components/Notification'
 import LoginForm from './components/LoginForm'
 import BlogForm from './components/BlogForm'
 import Blogs from './components/Blogs'
 import Togglable from './components/Togglable'
-import blogService from './services/blogs'
+import Logout from './components/Logout'
+import Users from './components/Users'
+import UserDetail from './components/UserDetail'
+import BlogDetail from './components/BlogDetail'
+import Navigation from './styled/Navigation'
+import Page from './styled/Page'
+import NavLink from './styled/NavLink'
+import Footer from './styled/Footer'
+import Body from './styled/Body'
 
 const App = () => {
-  const [blogs, setBlogs] = useState([])
-  const [errorMessage, setErrorMessage] = useState(null)
-  const [successMessage, setSuccessMessage] = useState(null)
-  const [user, setUser] = useState(null)
+  const navigate = useNavigate()
+
+  const dispatch = useDispatch()
+  const user = useSelector((state) => state.user)
+  const users = useSelector((state) => state.users)
+  const blogs = useSelector((state) => state.blogs)
+  const match = useMatch('/users/:id')
+  const secondMatch = useMatch('/blogs/:id')
+  const userMatch = match
+    ? users.find((user) => user.id === match.params.id)
+    : null
+  const blogMatch = secondMatch
+    ? blogs.find((blog) => blog.id === secondMatch.params.id)
+    : null
 
   useEffect(() => {
     if (user === null) {
       return
     }
-    blogService.getAll().then((blogs) => {
-      setBlogs(blogs)
-    })
-  }, [user])
+    dispatch(initializeBlogs())
+    dispatch(initializeUsers())
+  }, [dispatch, user])
 
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem('loggedBlogappUser')
     if (loggedUserJSON) {
       const logeedUser = JSON.parse(loggedUserJSON)
-      setUser(logeedUser)
+      dispatch(setUserWithDelay(logeedUser))
       blogService.setToken(logeedUser.token)
+      return
     }
-  }, [])
+    navigate('/login')
+  }, [dispatch, navigate])
 
-  const handleLoginOut = async (event) => {
-    event.preventDefault()
+  const handleLoginOut = () => {
     window.localStorage.removeItem('loggedBlogappUser')
-    setUser(null)
+    dispatch(clearUser())
   }
 
-  const addBlog = async (event, newBlog, setNewBlog) => {
+  const addBlog = (event, newBlog, setNewBlog) => {
     event.preventDefault()
     try {
       setNewBlog({ title: '', author: '', url: '', likes: 0 })
-      const newBlogToAdd = await blogService.create(newBlog)
-      setBlogs([...blogs, newBlogToAdd])
-      setSuccessMessage(
-        `a new blog ${newBlogToAdd.title} by ${newBlogToAdd.author} added`
+      dispatch(createBlog(newBlog))
+      dispatch(
+        setNotificationWithDelay(
+          `a new blog ${newBlog.title} by ${newBlog.author} added`,
+          5,
+          'success'
+        )
       )
-      setTimeout(() => {
-        setSuccessMessage(null)
-      }, 5000)
     } catch (exception) {
-      setErrorMessage('Blog already exists or invalid data')
-      setTimeout(() => {
-        setErrorMessage(null)
-      }, 5000)
+      dispatch(
+        setNotificationWithDelay(
+          'Blog already exists or invalid data',
+          5,
+          'error'
+        )
+      )
     }
   }
 
+  const handleLikes = async (updatedBlog, setUpdatedBlog, blogService) => {
+    await blogService.update(updatedBlog.id, { likes: updatedBlog.likes + 1 })
+    setUpdatedBlog({ ...updatedBlog, likes: updatedBlog.likes + 1 })
+  }
+
   return (
-    <div>
-      <h1>Blog List</h1>
+    <Page>
+      <Navigation>
+        <NavLink to="/">blogs</NavLink>
+        <NavLink to="/users">users</NavLink>
+        {user === null ? (
+          <NavLink to="/login">login</NavLink>
+        ) : (
+          <Logout handleLoginOut={handleLoginOut} />
+        )}
+      </Navigation>
+      <Body>
+        <h2>blogs</h2>
 
-      <Notification
-        message={errorMessage ? errorMessage : successMessage}
-        type={errorMessage ? 'error' : 'success'}
-      />
+        <Notification />
 
-      {user === null ? (
-        <Togglable buttonLabel="login">
-          <LoginForm setErrorMessage={setErrorMessage} setUser={setUser} />
-        </Togglable>
-      ) : (
-        <div>
-          <div>
-            <p>
-              {user.name} logged-in
-              <button onClick={handleLoginOut}>logout</button>
-            </p>
-          </div>
-          <Togglable buttonLabel="create new blog">
-            <BlogForm
-              blogs={blogs}
-              setBlogs={setBlogs}
-              setErrorMessage={setErrorMessage}
-              setSuccessMessage={setSuccessMessage}
-              addBlog={addBlog}
-            />
-          </Togglable>
-          <Blogs blogs={blogs} user={user} />
-        </div>
-      )}
-    </div>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <div>
+                <Togglable buttonLabel="create new">
+                  <BlogForm addBlog={addBlog} />
+                </Togglable>
+                <Blogs />
+              </div>
+            }
+          />
+          <Route path="/users" element={<Users />} />
+          <Route
+            path="/users/:id"
+            element={userMatch ? <UserDetail user={userMatch} /> : null}
+          />
+          <Route
+            path="/blogs/:id"
+            element={
+              blogMatch ? (
+                <BlogDetail blog={blogMatch} handleLikes={handleLikes} />
+              ) : null
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <Togglable buttonLabel="login">
+                <LoginForm />
+              </Togglable>
+            }
+          />
+        </Routes>
+      </Body>
+
+      <Footer>Blog app, by Juan Pablo Ubelhart 2025</Footer>
+    </Page>
   )
 }
 

@@ -65,10 +65,7 @@ const BlogForm = ({ addBlog }) => {
 }
 
 BlogForm.propTypes = {
-  blogs: PropTypes.array.isRequired,
-  setBlogs: PropTypes.func.isRequired,
-  setErrorMessage: PropTypes.func.isRequired,
-  setSuccessMessage: PropTypes.func.isRequired,
+  addBlog: PropTypes.func.isRequired,
 }
 
 export default BlogForm
